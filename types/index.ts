@@ -136,3 +136,35 @@ export interface APIError {
   message?: string;
   statusCode?: number;
 }
+
+// Calendar Types
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  date: Date;
+  time?: string;
+  description?: string;
+  emailId?: string;
+  reminderMinutes?: number;
+}
+
+// Team Collaboration Types
+export interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+  activeTasksCount: number;
+  responseRate: number;
+}
+
+export interface EmailAssignment {
+  id: string;
+  emailId: string;
+  assignedTo: string;
+  assignedBy: string;
+  assignedAt: string;
+  deadline?: string;
+  status: "pending" | "in-progress" | "completed";
+  priority: number;
+  notes?: string[];
+}
