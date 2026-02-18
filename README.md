@@ -94,7 +94,6 @@ Natural language deadline understanding:
 │  ┌─────────────────────────────────────────────────────┐    │
 │  │  Other                                              │    │
 │  │  • /api/auth/[...nextauth] (NextAuth.js)           │    │
-│  │  • /api/gemini (Gemini chat)                        │    │
 │  └─────────────────────────────────────────────────────┘    │
 └────────────────────────┬─────────────────────────────────────┘
                          │
@@ -105,7 +104,6 @@ Natural language deadline understanding:
 │                                                              │
 │  • Groq API (Llama 3.1 8B Instant) - AI inference           │
 │  • Gmail API (googleapis) - Email operations                │
-│  • Google Gemini API - Optional AI assistant                │
 │  • NextAuth.js - OAuth 2.0 authentication                   │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -144,9 +142,6 @@ GOOGLE_CLIENT_SECRET=your_google_client_secret
 # NextAuth
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=your_nextauth_secret
-
-# Google Gemini (optional)
-GEMINI_API_KEY=your_gemini_api_key
 ```
 
 4. **Run the development server**
@@ -179,9 +174,6 @@ Visit: http://localhost:3000
 - `POST /api/gmail/send` - Send email
 - `POST /api/gmail/reply` - Reply to email
 - `GET /api/gmail/attachment` - Download attachment
-
-### Gemini Integration
-- `POST /api/gemini` - Gemini AI chat
 
 ## 💡 Usage Examples
 
@@ -249,7 +241,6 @@ const { result } = await response.json();
 ### AI/ML
 - **Groq SDK** - Ultra-fast AI inference
 - **Llama 3.1 8B Instant** - Primary AI model
-- **Google Gemini** - Optional AI assistant
 
 ### Development
 - **ESLint** - Code linting
@@ -319,7 +310,7 @@ Built for AlgosQuest 2025
 ## 🙏 Acknowledgments
 
 - Groq for ultra-fast AI inference
-- Google for Gmail API and Gemini
+- Google for Gmail API
 - Next.js team for the amazing framework
 - Open source community
 

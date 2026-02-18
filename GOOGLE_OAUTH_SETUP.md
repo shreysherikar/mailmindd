@@ -96,10 +96,5 @@ To enable smart features like email summarization and priority scoring:
 4. Create a new key
 5. Add to `.env.local`: `GROQ_API_KEY=gsk_...`
 
-### Gemini API (Optional)
-1. Visit: https://makersuite.google.com/app/apikey
-2. Create API key
-3. Add to `.env.local`: `GEMINI_API_KEY=...`
-
 ## Next Steps
 Once you have Google OAuth working, we can add the to-do list feature!
