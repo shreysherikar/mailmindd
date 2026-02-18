@@ -902,39 +902,25 @@ export default function Home() {
     }
   }, [showTodoView, emails.length]);
 
-  // ✅ AI: Auto-generate AI data for emails when they load
+  // ✅ AI: Auto-generate AI data for emails when they load (ONCE)
   useEffect(() => {
-    if (emails.length > 0) {
-      // Get the currently displayed emails based on active folder and tab
-      const displayEmails = emails.filter((mail) => {
-        // Filter by folder
-        if (activeFolder === "inbox") {
-          if (mail.label?.includes("SENT") || mail.label?.includes("DRAFT")) return false;
-        } else if (activeFolder === "starred") {
-          return starredIds.includes(mail.id);
-        } else if (activeFolder === "snoozed") {
-          return snoozedIds.includes(mail.id);
-        } else if (activeFolder === "drafts") {
-          return mail.label?.includes("DRAFT");
-        }
-        
-        return true;
-      });
-      
-      // ✅ FIX: Only process emails that don't have AI data yet
-      const emailsNeedingAI = displayEmails.slice(0, 20).filter(mail => 
-        !aiPriorityMap[mail.id] || 
-        !aiCategoryMap[mail.id] || 
-        !aiSpamMap[mail.id] || 
-        !aiDeadlineMap[mail.id]
-      );
-      
-      // Only generate if there are emails needing AI data
-      if (emailsNeedingAI.length > 0) {
-        generateAllAIData(emailsNeedingAI);
-      }
+    // ✅ Safety check: only run in browser with session
+    if (typeof window === 'undefined' || !session || emails.length === 0) return;
+    
+    // ✅ FIX: Only process emails that don't have AI data yet
+    const emailsNeedingAI = emails.slice(0, 20).filter(mail => 
+      !aiPriorityMap[mail.id] || 
+      !aiCategoryMap[mail.id] || 
+      !aiSpamMap[mail.id] || 
+      !aiDeadlineMap[mail.id]
+    );
+    
+    // Only generate if there are emails needing AI data
+    if (emailsNeedingAI.length > 0) {
+      generateAllAIData(emailsNeedingAI);
     }
-  }, [emails.length]); // ✅ FIX: Only run when emails.length changes (i.e., new emails loaded)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [emails.length, session]); // ✅ Depend on emails.length and session
 
   // ✅ NEW: Auto-generate AI titles for archived emails without titles
   useEffect(() => {
