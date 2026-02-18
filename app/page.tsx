@@ -49,6 +49,8 @@ export default function Home() {
   const [copied, setCopied] = useState(false);
   const [sending, setSending] = useState(false);
   const [aiPriorityMap, setAiPriorityMap] = useState<any>({});
+  // ✅ NEW: Cache AI-generated to-do titles
+  const [aiTodoTitles, setAiTodoTitles] = useState<any>({});
   // ⭐ Starred Emails
   const [starredIds, setStarredIds] = useState<string[]>([]);
   // ✅ Load Starred Emails from localStorage on startup
@@ -77,15 +79,20 @@ export default function Home() {
 
   // ✅ Done Emails (removed)
   const [doneIds, setDoneIds] = useState<string[]>([]);
+  
+  // ✅ NEW: Archive state (stores completed emails with timestamp)
+  const [archivedEmails, setArchivedEmails] = useState<any[]>([]);
   // ✅ Load Saved Folders on Startup
   useEffect(() => {
     const savedStarred = JSON.parse(localStorage.getItem("starredIds") || "[]");
     const savedSnoozed = JSON.parse(localStorage.getItem("snoozedIds") || "[]");
     const savedDone = JSON.parse(localStorage.getItem("doneIds") || "[]");
+    const savedArchive = JSON.parse(localStorage.getItem("archivedEmails") || "[]");
 
     setStarredIds(savedStarred);
     setSnoozedIds(savedSnoozed);
     setDoneIds(savedDone);
+    setArchivedEmails(savedArchive);
   }, []);
 
   // ✅ Load Done Emails from localStorage on startup
@@ -122,6 +129,9 @@ export default function Home() {
   const [tasks, setTasks] = useState<any[]>([]);
   // ✅ FIX 1: Default tab to "All Mails"
   const [activeTab, setActiveTab] = useState("All Mails");
+  
+  // ✅ To-Do List State
+  const [showTodoView, setShowTodoView] = useState(false);
 
   // 🔍 Search Query
   const [searchQuery, setSearchQuery] = useState("");
@@ -207,13 +217,36 @@ export default function Home() {
   }
 
 
-  // ✅ Mark Done (remove from inbox)
+  // ✅ Mark Done (archive the email)
   function markDone() {
     if (!selectedMail) return;
 
+    // Add to done IDs
     setDoneIds((prev) => {
       const updated = [...prev, selectedMail.id];
       localStorage.setItem("doneIds", JSON.stringify(updated));
+      return updated;
+    });
+
+    // ✅ NEW: Save to archive with completion timestamp AND AI title
+    setArchivedEmails((prev) => {
+      const archivedEmail = {
+        ...selectedMail,
+        completedAt: new Date().toISOString(),
+        completedDate: new Date().toLocaleString("en-US", {
+          weekday: "short",
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        // ✅ Save the AI-generated to-do title if available
+        todoTitle: aiTodoTitles[selectedMail.id] || null,
+      };
+      
+      const updated = [archivedEmail, ...prev]; // Add to beginning
+      localStorage.setItem("archivedEmails", JSON.stringify(updated));
       return updated;
     });
 
@@ -416,6 +449,59 @@ export default function Home() {
     }
   }
 
+  // ✅ NEW: Generate AI-powered to-do title
+  async function generateAITodoTitle(mail: any) {
+    // Already generated → skip
+    if (aiTodoTitles[mail.id]) return;
+
+    try {
+      const res = await fetch("/api/ai/todo-title", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subject: mail.subject,
+          snippet: mail.snippet,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.title) {
+        setAiTodoTitles((prev: any) => ({
+          ...prev,
+          [mail.id]: data.title,
+        }));
+
+        // ✅ NEW: If this is an archived email, update it in archive
+        if (activeFolder === "archive") {
+          setArchivedEmails((prev) => {
+            const updated = prev.map(archivedMail => 
+              archivedMail.id === mail.id 
+                ? { ...archivedMail, todoTitle: data.title }
+                : archivedMail
+            );
+            localStorage.setItem("archivedEmails", JSON.stringify(updated));
+            return updated;
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error generating AI todo title:", error);
+    }
+  }
+
+  // ✅ NEW: Batch generate AI titles for all visible to-dos
+  async function generateAllTodoTitles(emails: any[]) {
+    const emailsNeedingTitles = emails.filter(mail => !aiTodoTitles[mail.id]);
+    
+    // Generate titles in parallel (max 5 at a time to avoid rate limits)
+    const batchSize = 5;
+    for (let i = 0; i < emailsNeedingTitles.length; i += batchSize) {
+      const batch = emailsNeedingTitles.slice(i, i + batchSize);
+      await Promise.all(batch.map(mail => generateAITodoTitle(mail)));
+    }
+  }
+
 
   async function generateExplanation(mail: any) {
     setLoadingAI(true);
@@ -466,44 +552,76 @@ export default function Home() {
     setSummarizing(false);
   };
 
+  // ✅ ENHANCED: Extract smart, concise action items
   function extractTasks(text: string) {
     const lower = text.toLowerCase();
     const tasks: string[] = [];
 
-    if (
-      lower.includes("payment due") ||
-      lower.includes("pay now") ||
-      lower.includes("invoice") ||
-      lower.includes("bill")
-    ) {
-      tasks.push("💳 Make the payment");
+    // Payment related
+    if (lower.includes("payment due") || lower.includes("pay now") || lower.includes("invoice") || lower.includes("bill")) {
+      tasks.push("💳 Make payment");
     }
 
-    if (
-      lower.includes("meeting") ||
-      lower.includes("zoom") ||
-      lower.includes("google meet") ||
-      lower.includes("schedule")
-    ) {
-      tasks.push("📅 Attend the meeting");
+    // Meeting related
+    if (lower.includes("meeting") || lower.includes("zoom") || lower.includes("google meet")) {
+      tasks.push("📅 Join meeting");
+    }
+    if (lower.includes("schedule") && lower.includes("meeting")) {
+      tasks.push("📅 Schedule meeting");
+    }
+    if (lower.includes("rsvp") || lower.includes("confirm attendance")) {
+      tasks.push("✅ Confirm attendance");
     }
 
-    if (
-      lower.includes("job") ||
-      lower.includes("internship") ||
-      lower.includes("interview") ||
-      lower.includes("offer letter")
-    ) {
-      tasks.push("📝 Apply / Respond to recruiter");
+    // Job/Career related
+    if (lower.includes("interview")) {
+      tasks.push("💼 Prepare for interview");
+    }
+    if (lower.includes("job application") || lower.includes("apply")) {
+      tasks.push("📝 Submit application");
+    }
+    if (lower.includes("offer letter")) {
+      tasks.push("📄 Review offer letter");
     }
 
-    if (lower.includes("deadline") || lower.includes("urgent")) {
-      tasks.push("⏰ Take action immediately");
+    // Response required
+    if (lower.includes("reply") || lower.includes("respond")) {
+      tasks.push("💬 Send reply");
+    }
+    if (lower.includes("feedback") || lower.includes("review")) {
+      tasks.push("� Provide feedback");
     }
 
-    if (tasks.length === 0) tasks.push("📌 No urgent action required");
+    // Decision/Approval
+    if (lower.includes("approval") || lower.includes("approve")) {
+      tasks.push("✅ Approve request");
+    }
+    if (lower.includes("decision")) {
+      tasks.push("🤔 Make decision");
+    }
+
+    // Documents
+    if (lower.includes("sign") && (lower.includes("document") || lower.includes("contract"))) {
+      tasks.push("✍️ Sign document");
+    }
+    if (lower.includes("submit") && lower.includes("document")) {
+      tasks.push("📤 Submit document");
+    }
+
+    // Urgent
+    if (lower.includes("urgent") || lower.includes("asap")) {
+      tasks.push("🚨 Urgent action needed");
+    }
+
+    if (tasks.length === 0) tasks.push("📧 Read and respond");
 
     return tasks;
+  }
+
+  // ✅ Fallback: Simple title when AI is loading
+  function getSimpleTodoTitle(mail: any): string {
+    const subject = mail.subject || "Read email";
+    return subject.length > 45 ? subject.substring(0, 42) + "..." : subject;
   }
   function extractDeadline(text: string) {
     if (!text) return null;
@@ -629,6 +747,34 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [session]); // ✅ Only depends on session
 
+  // ✅ Auto-generate AI titles when entering to-do view
+  useEffect(() => {
+    if (showTodoView && emails.length > 0) {
+      // Filter to get actionable emails
+      const actionableEmails = emails.filter(mail => {
+        if (snoozedIds.includes(mail.id) || doneIds.includes(mail.id)) return false;
+        return isActionableEmail(mail);
+      });
+      
+      // Generate titles for first 10 emails immediately
+      const topEmails = actionableEmails.slice(0, 10);
+      generateAllTodoTitles(topEmails);
+    }
+  }, [showTodoView, emails.length]);
+
+  // ✅ NEW: Auto-generate AI titles for archived emails without titles
+  useEffect(() => {
+    if (activeFolder === "archive" && archivedEmails.length > 0) {
+      // Find archived emails without AI titles
+      const emailsNeedingTitles = archivedEmails.filter(mail => !mail.todoTitle);
+      
+      if (emailsNeedingTitles.length > 0) {
+        // Generate titles for first 10 archived emails
+        const topEmails = emailsNeedingTitles.slice(0, 10);
+        topEmails.forEach(mail => generateAITodoTitle(mail));
+      }
+    }
+  }, [activeFolder, archivedEmails.length]);
 
   const refreshInbox = async () => {
     setEmails([]); // clear old emails
@@ -642,32 +788,54 @@ export default function Home() {
 
     const text = subject + " " + snippet;
 
+    // ✅ DO NOW (urgent, time-sensitive)
     if (
-      text.includes("job") ||
-      text.includes("intern") ||
+      text.includes("urgent") ||
+      text.includes("asap") ||
+      text.includes("today") ||
+      text.includes("tonight") ||
+      text.includes("immediately") ||
+      text.includes("submit") ||
+      text.includes("deadline today") ||
+      text.includes("due today") ||
+      text.includes("expires today") ||
       text.includes("interview") ||
-      text.includes("apply")
+      text.includes("job offer")
     ) {
       return "Do Now";
     }
 
+    // ✅ NEEDS DECISION (requires your input/choice)
     if (
-      text.includes("event") ||
-      text.includes("meet") ||
-      text.includes("schedule") ||
-      text.includes("decision")
+      text.includes("decision") ||
+      text.includes("approve") ||
+      text.includes("confirm") ||
+      text.includes("rsvp") ||
+      text.includes("accept") ||
+      text.includes("decline") ||
+      text.includes("choose") ||
+      text.includes("select") ||
+      text.includes("feedback") ||
+      text.includes("review") ||
+      text.includes("sign")
     ) {
       return "Needs Decision";
     }
 
+    // ✅ WAITING (updates, can wait)
     if (
-      text.includes("newsletter") ||
       text.includes("update") ||
-      text.includes("alert")
+      text.includes("newsletter") ||
+      text.includes("notification") ||
+      text.includes("alert") ||
+      text.includes("reminder") ||
+      text.includes("fyi") ||
+      text.includes("heads up")
     ) {
       return "Waiting";
     }
 
+    // ✅ LOW ENERGY (default, less urgent)
     return "Low Energy";
   }
 
@@ -679,31 +847,35 @@ export default function Home() {
     const snippet = (mail.snippet || "").toLowerCase();
     const text = subject + " " + snippet;
 
-    if (
-      text.includes("urgent") ||
-      text.includes("today") ||
-      text.includes("expires")
-    )
+    // ✅ URGENCY KEYWORDS (highest priority)
+    if (text.includes("urgent") || text.includes("asap") || text.includes("immediately"))
       score += 50;
-    else if (text.includes("tomorrow")) score += 40;
-    else if (text.includes("deadline") || text.includes("last date"))
+    else if (text.includes("today") || text.includes("tonight") || text.includes("expires today"))
+      score += 45;
+    else if (text.includes("tomorrow") || text.includes("due tomorrow"))
+      score += 40;
+    else if (text.includes("deadline") || text.includes("last date") || text.includes("due by"))
       score += 35;
+    else if (text.includes("this week") || text.includes("by friday"))
+      score += 25;
 
-    if (
-      text.includes("job") ||
-      text.includes("intern") ||
-      text.includes("interview")
-    )
-      score += 20;
-    else if (
-      text.includes("payment") ||
-      text.includes("invoice") ||
-      text.includes("bill")
-    )
-      score += 18;
-    else if (text.includes("meeting") || text.includes("event")) score += 15;
-    else score += 5;
+    // ✅ ACTION TYPE (importance)
+    if (text.includes("submit") || text.includes("assignment") || text.includes("homework"))
+      score += 25; // Academic deadlines
+    else if (text.includes("interview") || text.includes("job offer"))
+      score += 22; // Career opportunities
+    else if (text.includes("payment") || text.includes("invoice") || text.includes("bill"))
+      score += 20; // Financial obligations
+    else if (text.includes("sign") || text.includes("contract") || text.includes("agreement"))
+      score += 18; // Legal documents
+    else if (text.includes("meeting") || text.includes("call") || text.includes("zoom"))
+      score += 15; // Meetings
+    else if (text.includes("confirm") || text.includes("rsvp"))
+      score += 12; // Confirmations
+    else
+      score += 5; // Default
 
+    // ✅ RECENCY (time-based priority)
     if (mail.date) {
       const receivedDate = new Date(mail.date);
       const now = new Date();
@@ -712,10 +884,11 @@ export default function Home() {
         const diffHours =
           (now.getTime() - receivedDate.getTime()) / (1000 * 60 * 60);
 
-        if (diffHours < 1) score += 30;
-        else if (diffHours < 24) score += 25;
-        else if (diffHours < 48) score += 15;
-        else score += 5;
+        if (diffHours < 1) score += 30; // Last hour
+        else if (diffHours < 6) score += 25; // Last 6 hours
+        else if (diffHours < 24) score += 20; // Today
+        else if (diffHours < 48) score += 10; // Yesterday
+        else score += 5; // Older
       }
     }
 
@@ -819,6 +992,104 @@ export default function Home() {
       return true;
     }
 
+    return false;
+  }
+
+  // ✅ NEW: Check if email is actionable (for to-do list)
+  function isActionableEmail(mail: any) {
+    // Filter out spam and promotional emails
+    if (isSpamEmail(mail)) return false;
+    
+    const subject = (mail.subject || "").toLowerCase();
+    const snippet = (mail.snippet || "").toLowerCase();
+    const from = (mail.from || "").toLowerCase();
+    const text = subject + " " + snippet;
+    
+    // ✅ STRICT: Filter out promotional content
+    const promotionalKeywords = [
+      "newsletter",
+      "unsubscribe",
+      "promotional",
+      "marketing",
+      "advertisement",
+      "sale",
+      "discount",
+      "offer expires",
+      "limited time",
+      "shop now",
+      "buy now",
+      "% off",
+      "save now",
+      "deal",
+      "coupon",
+      "free trial",
+      "upgrade now",
+      "premium",
+      "pro plan",
+      "enroll now",
+      "register now",
+      "sign up",
+      "webinar",
+      "watch now",
+      "learn more",
+      "get started",
+      "join now",
+    ];
+    
+    for (let keyword of promotionalKeywords) {
+      if (text.includes(keyword)) return false;
+    }
+    
+    // ✅ Filter out automated notifications that don't need action
+    if (from.includes("noreply") || from.includes("no-reply") || from.includes("notification")) {
+      // Only allow if it has urgent keywords
+      const urgentKeywords = ["deadline", "due", "submit", "urgent", "action required", "confirm", "approve"];
+      const hasUrgent = urgentKeywords.some(keyword => text.includes(keyword));
+      if (!hasUrgent) return false;
+    }
+    
+    // ✅ POSITIVE: Check if email requires action
+    const actionKeywords = [
+      "job",
+      "interview",
+      "application",
+      "meeting",
+      "deadline",
+      "urgent",
+      "payment",
+      "invoice",
+      "bill",
+      "confirm",
+      "rsvp",
+      "respond",
+      "reply",
+      "action required",
+      "decision",
+      "approval",
+      "review",
+      "feedback",
+      "schedule",
+      "appointment",
+      "submit",
+      "due",
+      "sign",
+      "contract",
+      "document",
+    ];
+    
+    for (let keyword of actionKeywords) {
+      if (text.includes(keyword)) return true;
+    }
+    
+    // ✅ If it's from a person (not automated), it's likely actionable
+    if (!from.includes("noreply") && !from.includes("no-reply") && !from.includes("@notifications")) {
+      // But not if it's clearly promotional
+      if (text.includes("team") && (text.includes("update") || text.includes("feature"))) {
+        return false; // Product update emails
+      }
+      return true;
+    }
+    
     return false;
   }
 
@@ -1233,6 +1504,34 @@ export default function Home() {
 
   // ✅ FIX 3: Proper filtering with BOTH activeTab AND activeFolder
   const filteredEmails = emails.filter((mail) => {
+    // ✅ To-Do View Filter
+    if (showTodoView) {
+      // Only show actionable emails (no spam/promotional)
+      if (!isActionableEmail(mail)) return false;
+      
+      // Hide snoozed and done emails
+      if (snoozedIds.includes(mail.id)) return false;
+      if (doneIds.includes(mail.id)) return false;
+      
+      // Apply search filter if active
+      if (searchQuery.trim() !== "") {
+        const query = searchQuery.toLowerCase();
+        const subjectMatch = mail.subject?.toLowerCase().includes(query);
+        const snippetMatch = mail.snippet?.toLowerCase().includes(query);
+        const fromMatch = mail.from?.toLowerCase().includes(query);
+        if (!subjectMatch && !snippetMatch && !fromMatch) {
+          return false;
+        }
+      }
+      
+      return true;
+    }
+    
+    // ✅ NEW: Archive View - show archived emails
+    if (activeFolder === "archive") {
+      return false; // We'll display archivedEmails separately
+    }
+    
     // Folder filtering first
     if (activeFolder === "starred") return starredIds.includes(mail.id);
     if (activeFolder === "snoozed") return snoozedIds.includes(mail.id);
@@ -1266,9 +1565,11 @@ export default function Home() {
     return getEmailCategory(mail) === activeTab;
   });
 
+  // ✅ Get emails to display (regular or archived)
+  const displayEmails = activeFolder === "archive" ? archivedEmails : filteredEmails;
 
 
-  const burnout = getBurnoutStats(filteredEmails);
+  const burnout = getBurnoutStats(displayEmails);
 
   if (session && showSplash) {
     return <SplashScreen />;
@@ -1590,12 +1891,19 @@ export default function Home() {
             {[
               { key: "inbox", label: "📥 Inbox" },
               { key: "starred", label: "⭐ Starred" },
-
+              { key: "todo", label: "✅ To-Do List" },
+              { key: "archive", label: "📦 Archive" },
             ].map((item) => (
               <div
                 key={item.key}
                 onClick={() => {
-                  setActiveFolder(item.key);
+                  if (item.key === "todo") {
+                    setShowTodoView(true);
+                    setActiveFolder("inbox");
+                  } else {
+                    setShowTodoView(false);
+                    setActiveFolder(item.key);
+                  }
                   setSidebarOpen(false);
                 }}
                 style={{
@@ -1605,16 +1913,18 @@ export default function Home() {
                   fontWeight: 600,
                   marginBottom: 8,
                   background:
-                    activeFolder === item.key ? "#DBEAFE" : "transparent",
+                    (item.key === "todo" && showTodoView) || (item.key !== "todo" && activeFolder === item.key && !showTodoView) 
+                      ? "#DBEAFE" 
+                      : "transparent",
                   transition: "all 0.2s ease",
                 }}
                 onMouseOver={(e) => {
-                  if (activeFolder !== item.key) {
+                  if (!((item.key === "todo" && showTodoView) || (item.key !== "todo" && activeFolder === item.key && !showTodoView))) {
                     e.currentTarget.style.background = "#F3F4F6";
                   }
                 }}
                 onMouseOut={(e) => {
-                  if (activeFolder !== item.key) {
+                  if (!((item.key === "todo" && showTodoView) || (item.key !== "todo" && activeFolder === item.key && !showTodoView))) {
                     e.currentTarget.style.background = "transparent";
                   }
                 }}
@@ -1721,13 +2031,103 @@ export default function Home() {
               background: "#F8FAFF",
             }}
           >
+            {/* ✅ TO-DO LIST HEADER */}
+            {showTodoView && (
+              <div
+                style={{
+                  padding: "16px",
+                  background: "linear-gradient(135deg, #6D28D9 0%, #2563EB 100%)",
+                  color: "white",
+                  borderBottom: "2px solid #E5E7EB",
+                }}
+              >
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+                  ✅ To-Do List
+                </h2>
+                <p style={{ margin: "6px 0 0 0", fontSize: 13, opacity: 0.9 }}>
+                  {displayEmails.length} actionable email{displayEmails.length !== 1 ? 's' : ''} • No spam or promotional
+                </p>
+              </div>
+            )}
+
+            {/* ✅ NEW: ARCHIVE HEADER */}
+            {activeFolder === "archive" && (
+              <div
+                style={{
+                  padding: "16px",
+                  background: "linear-gradient(135deg, #059669 0%, #10B981 100%)",
+                  color: "white",
+                  borderBottom: "2px solid #E5E7EB",
+                }}
+              >
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+                  📦 Archive
+                </h2>
+                <p style={{ margin: "6px 0 0 0", fontSize: 13, opacity: 0.9 }}>
+                  {displayEmails.length} completed email{displayEmails.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+            )}
+
+            {/* ✅ CATEGORY TABS FOR TO-DO VIEW */}
+            {showTodoView && (
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  padding: "12px",
+                  background: "white",
+                  borderBottom: "1px solid #E5E7EB",
+                  overflowX: "auto",
+                }}
+              >
+                {["All", "Do Now", "Needs Decision", "Waiting", "Low Energy"].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab === "All" ? "All Mails" : tab)}
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: 8,
+                      border: "none",
+                      cursor: "pointer",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      whiteSpace: "nowrap",
+                      background: (tab === "All" && activeTab === "All Mails") || activeTab === tab
+                        ? "linear-gradient(135deg, #6D28D9 0%, #2563EB 100%)"
+                        : "#F3F4F6",
+                      color: (tab === "All" && activeTab === "All Mails") || activeTab === tab
+                        ? "white"
+                        : "#374151",
+                      transition: "all 0.2s ease",
+                    }}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            )}
 
 
             {/* ✅ PREMIUM COMPACT EMAIL CARDS */}
-            {filteredEmails.map((mail, index) => {
+            {displayEmails.map((mail, index) => {
               const score = getPriorityScore(mail);
               const category = getEmailCategory(mail);
-
+              const tasks = showTodoView ? extractTasks(mail.snippet || mail.body || "") : [];
+              
+              // ✅ Title logic for different views
+              let todoTitle = "";
+              let isAIGenerated = false;
+              
+              if (activeFolder === "archive") {
+                // Archive: Use saved title OR newly generated title OR fallback
+                todoTitle = mail.todoTitle || aiTodoTitles[mail.id] || getSimpleTodoTitle(mail);
+                isAIGenerated = !!(mail.todoTitle || aiTodoTitles[mail.id]);
+              } else if (showTodoView) {
+                // To-Do: Use AI title or fallback
+                todoTitle = aiTodoTitles[mail.id] || getSimpleTodoTitle(mail);
+                isAIGenerated = !!aiTodoTitles[mail.id];
+              }
 
 
               return (
@@ -1736,6 +2136,10 @@ export default function Home() {
                   onClick={() => {
                     openMailAndGenerateAI(mail.id, mail);
                     generateAIPriorityForMail(mail);
+                    // ✅ Generate AI title for archive or to-do
+                    if (showTodoView || activeFolder === "archive") {
+                      generateAITodoTitle(mail);
+                    }
                   }}
                   style={{
                     padding: 14,
@@ -1789,17 +2193,20 @@ export default function Home() {
 
                     {/* ✅ CONTENT AREA */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      {/* Subject */}
+                      {/* ✅ TO-DO VIEW or ARCHIVE: Show concise title, NORMAL VIEW: Show subject */}
                       <div style={{
                         fontWeight: 700,
-                        color: "#111827",
-                        fontSize: 14,
+                        color: isAIGenerated ? "#6D28D9" : "#111827",
+                        fontSize: (showTodoView || activeFolder === "archive") ? 15 : 14,
                         marginBottom: 4,
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap"
                       }}>
-                        {mail.subject || "(No Subject)"}
+                        {(showTodoView || activeFolder === "archive") 
+                          ? (todoTitle || mail.subject || "(No Subject)")  // ✅ Always show something
+                          : (mail.subject || "(No Subject)")
+                        }
                       </div>
 
                       {/* ✅ COMPACT SINGLE LINE SNIPPET */}
@@ -1813,7 +2220,7 @@ export default function Home() {
                           whiteSpace: "nowrap",
                         }}
                       >
-                        {mail.snippet}
+                        {(showTodoView || activeFolder === "archive") ? `From: ${mail.from?.split('<')[0].trim() || mail.from}` : mail.snippet}
                       </p>
 
                       {/* Date + Badges Row */}
@@ -1822,8 +2229,42 @@ export default function Home() {
 
                         {/* Date */}
                         <span style={{ fontSize: 11, color: "#9CA3AF" }}>
-                          {mail.date}
+                          {activeFolder === "archive" && mail.completedDate 
+                            ? `Completed: ${mail.completedDate}` 
+                            : mail.date}
                         </span>
+
+                        {/* ✅ NEW: Completed Badge for Archive */}
+                        {activeFolder === "archive" && (
+                          <span
+                            style={{
+                              padding: "2px 8px",
+                              borderRadius: 8,
+                              fontSize: 10,
+                              fontWeight: 700,
+                              background: "linear-gradient(135deg, #059669 0%, #10B981 100%)",
+                              color: "white",
+                            }}
+                          >
+                            ✅ Done
+                          </span>
+                        )}
+
+                        {/* AI Badge */}
+                        {isAIGenerated && (
+                          <span
+                            style={{
+                              padding: "2px 8px",
+                              borderRadius: 8,
+                              fontSize: 10,
+                              fontWeight: 700,
+                              background: "linear-gradient(135deg, #6D28D9 0%, #8B5CF6 100%)",
+                              color: "white",
+                            }}
+                          >
+                            ✨ AI
+                          </span>
+                        )}
 
                         {/* First Time Sender Badge */}
                         {isFirstTimeSender(mail, emails) && (
@@ -1877,6 +2318,29 @@ export default function Home() {
                     {category} • {score}
 
                   </div>
+                  
+                  {/* ✅ TO-DO VIEW: Show Action Items */}
+                  {showTodoView && tasks.length > 0 && (
+                    <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid #E5E7EB" }}>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                        {tasks.slice(0, 3).map((task, i) => (
+                          <span
+                            key={i}
+                            style={{
+                              fontSize: 11,
+                              padding: "4px 8px",
+                              background: "#F3F4F6",
+                              borderRadius: 6,
+                              color: "#374151",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {task}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* AI Priority Reason - Compact */}
                   {aiPriorityMap[mail.id] && (
