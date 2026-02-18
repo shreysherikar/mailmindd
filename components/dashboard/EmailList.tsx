@@ -219,7 +219,7 @@ export default function EmailList(props: any) {
             {filteredEmails.map((mail: any, index: number) => {
                 const score = getPriorityScore(mail);
                 const text = (mail.subject || "") + " " + (mail.snippet || "");
-                const deadline = extractDeadline(text);
+                const deadline = extractDeadline(text, mail.id);
 
                 return (
                     <div
