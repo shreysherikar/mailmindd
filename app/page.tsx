@@ -72,6 +72,16 @@ export default function Home() {
   const [aiSpamMap, setAiSpamMap] = useState<any>({});
   // ✅ AI: Cache AI-generated deadlines
   const [aiDeadlineMap, setAiDeadlineMap] = useState<any>({});
+  
+  // ✅ AI Progress Tracking
+  const [aiProgress, setAiProgress] = useState({
+    priority: { total: 0, completed: 0, status: 'idle' as 'idle' | 'loading' | 'done' },
+    category: { total: 0, completed: 0, status: 'idle' as 'idle' | 'loading' | 'done' },
+    spam: { total: 0, completed: 0, status: 'idle' as 'idle' | 'loading' | 'done' },
+    deadline: { total: 0, completed: 0, status: 'idle' as 'idle' | 'loading' | 'done' },
+  });
+  const [showAiProgress, setShowAiProgress] = useState(false);
+  
   // ⭐ Starred Emails
   const [starredIds, setStarredIds] = useState<string[]>([]);
   // ✅ Load Starred Emails from localStorage on startup
@@ -469,6 +479,12 @@ export default function Home() {
         ...prev,
         [mail.id]: data.result,
       }));
+      
+      // Update progress
+      setAiProgress(prev => ({
+        ...prev,
+        priority: { ...prev.priority, completed: prev.priority.completed + 1 }
+      }));
     }
   }
 
@@ -547,6 +563,12 @@ export default function Home() {
           ...prev,
           [mail.id]: data.result,
         }));
+        
+        // Update progress
+        setAiProgress(prev => ({
+          ...prev,
+          category: { ...prev.category, completed: prev.category.completed + 1 }
+        }));
       }
     } catch (error) {
       console.error("Error generating AI category:", error);
@@ -576,6 +598,12 @@ export default function Home() {
           ...prev,
           [mail.id]: data.result,
         }));
+        
+        // Update progress
+        setAiProgress(prev => ({
+          ...prev,
+          spam: { ...prev.spam, completed: prev.spam.completed + 1 }
+        }));
       }
     } catch (error) {
       console.error("Error generating AI spam detection:", error);
@@ -604,6 +632,12 @@ export default function Home() {
           ...prev,
           [mail.id]: data.result,
         }));
+        
+        // Update progress
+        setAiProgress(prev => ({
+          ...prev,
+          deadline: { ...prev.deadline, completed: prev.deadline.completed + 1 }
+        }));
       }
     } catch (error) {
       console.error("Error generating AI deadline:", error);
@@ -613,6 +647,17 @@ export default function Home() {
   // ✅ AI: Batch generate all AI data for visible emails
   async function generateAllAIData(emails: any[]) {
     const emailsNeedingAI = emails.slice(0, 20); // Process first 20 emails
+    
+    if (emailsNeedingAI.length === 0) return;
+    
+    // Initialize progress
+    setShowAiProgress(true);
+    setAiProgress({
+      priority: { total: emailsNeedingAI.length, completed: 0, status: 'loading' },
+      category: { total: emailsNeedingAI.length, completed: 0, status: 'loading' },
+      spam: { total: emailsNeedingAI.length, completed: 0, status: 'loading' },
+      deadline: { total: emailsNeedingAI.length, completed: 0, status: 'loading' },
+    });
     
     // Generate all AI data in parallel (in batches of 5 to avoid overwhelming the API)
     const batchSize = 5;
@@ -627,6 +672,17 @@ export default function Home() {
         ]);
       }));
     }
+    
+    // Mark all as done
+    setAiProgress(prev => ({
+      priority: { ...prev.priority, status: 'done' },
+      category: { ...prev.category, status: 'done' },
+      spam: { ...prev.spam, status: 'done' },
+      deadline: { ...prev.deadline, status: 'done' },
+    }));
+    
+    // Hide progress after 2 seconds
+    setTimeout(() => setShowAiProgress(false), 2000);
   }
 
 
@@ -2169,6 +2225,146 @@ export default function Home() {
           setShowFocusMode={setShowFocusMode}
           setShowCompose={setShowCompose}
         />
+
+        {/* AI Progress Indicator */}
+        {showAiProgress && (
+          <div
+            style={{
+              position: "fixed",
+              top: 100,
+              right: 20,
+              width: 320,
+              background: "rgba(255, 255, 255, 0.98)",
+              backdropFilter: "blur(20px)",
+              borderRadius: 20,
+              padding: 24,
+              boxShadow: "0 12px 40px rgba(109, 40, 217, 0.25)",
+              border: "2px solid #6D28D9",
+              zIndex: 10000,
+              animation: "slideIn 0.3s ease-out",
+            }}
+          >
+            <h3
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                marginBottom: 20,
+                background: "linear-gradient(135deg, #6D28D9 0%, #2563EB 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
+              🧠 AI Analyzing Emails...
+            </h3>
+
+            {/* Priority */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>
+                  {aiProgress.priority.status === 'done' ? '✅' : '⏳'} Analyzing priority...
+                </span>
+                <span style={{ fontSize: 13, color: "#6B7280" }}>
+                  {aiProgress.priority.completed}/{aiProgress.priority.total}
+                </span>
+              </div>
+              <div style={{ width: "100%", height: 6, background: "#E5E7EB", borderRadius: 999, overflow: "hidden" }}>
+                <div
+                  style={{
+                    width: `${(aiProgress.priority.completed / aiProgress.priority.total) * 100}%`,
+                    height: "100%",
+                    background: aiProgress.priority.status === 'done' ? "#10B981" : "linear-gradient(90deg, #6D28D9, #2563EB)",
+                    borderRadius: 999,
+                    transition: "width 0.3s ease",
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Category */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>
+                  {aiProgress.category.status === 'done' ? '✅' : '⏳'} Categorizing emails...
+                </span>
+                <span style={{ fontSize: 13, color: "#6B7280" }}>
+                  {aiProgress.category.completed}/{aiProgress.category.total}
+                </span>
+              </div>
+              <div style={{ width: "100%", height: 6, background: "#E5E7EB", borderRadius: 999, overflow: "hidden" }}>
+                <div
+                  style={{
+                    width: `${(aiProgress.category.completed / aiProgress.category.total) * 100}%`,
+                    height: "100%",
+                    background: aiProgress.category.status === 'done' ? "#10B981" : "linear-gradient(90deg, #8B5CF6, #6D28D9)",
+                    borderRadius: 999,
+                    transition: "width 0.3s ease",
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Spam Detection */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>
+                  {aiProgress.spam.status === 'done' ? '✅' : '⏳'} Detecting spam...
+                </span>
+                <span style={{ fontSize: 13, color: "#6B7280" }}>
+                  {aiProgress.spam.completed}/{aiProgress.spam.total}
+                </span>
+              </div>
+              <div style={{ width: "100%", height: 6, background: "#E5E7EB", borderRadius: 999, overflow: "hidden" }}>
+                <div
+                  style={{
+                    width: `${(aiProgress.spam.completed / aiProgress.spam.total) * 100}%`,
+                    height: "100%",
+                    background: aiProgress.spam.status === 'done' ? "#10B981" : "linear-gradient(90deg, #EF4444, #F59E0B)",
+                    borderRadius: 999,
+                    transition: "width 0.3s ease",
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Deadline Extraction */}
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>
+                  {aiProgress.deadline.status === 'done' ? '✅' : '⏳'} Extracting deadlines...
+                </span>
+                <span style={{ fontSize: 13, color: "#6B7280" }}>
+                  {aiProgress.deadline.completed}/{aiProgress.deadline.total}
+                </span>
+              </div>
+              <div style={{ width: "100%", height: 6, background: "#E5E7EB", borderRadius: 999, overflow: "hidden" }}>
+                <div
+                  style={{
+                    width: `${(aiProgress.deadline.completed / aiProgress.deadline.total) * 100}%`,
+                    height: "100%",
+                    background: aiProgress.deadline.status === 'done' ? "#10B981" : "linear-gradient(90deg, #0EA5E9, #2563EB)",
+                    borderRadius: 999,
+                    transition: "width 0.3s ease",
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Powered by Groq */}
+            <div
+              style={{
+                marginTop: 16,
+                paddingTop: 16,
+                borderTop: "1px solid #E5E7EB",
+                textAlign: "center",
+                fontSize: 12,
+                color: "#9CA3AF",
+                fontWeight: 600,
+              }}
+            >
+              Powered by Groq Llama 3.1 8B ⚡
+            </div>
+          </div>
+        )}
 
         <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
           {/* ✅ FULL-SCREEN WEEKLY ANALYSIS */}
