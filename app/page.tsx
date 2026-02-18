@@ -62,6 +62,12 @@ export default function Home() {
   const [aiPriorityMap, setAiPriorityMap] = useState<any>({});
   // ✅ NEW: Cache AI-generated to-do titles
   const [aiTodoTitles, setAiTodoTitles] = useState<any>({});
+  // ✅ AI: Cache AI-generated categories
+  const [aiCategoryMap, setAiCategoryMap] = useState<any>({});
+  // ✅ AI: Cache AI-generated spam detection
+  const [aiSpamMap, setAiSpamMap] = useState<any>({});
+  // ✅ AI: Cache AI-generated deadlines
+  const [aiDeadlineMap, setAiDeadlineMap] = useState<any>({});
   // ⭐ Starred Emails
   const [starredIds, setStarredIds] = useState<string[]>([]);
   // ✅ Load Starred Emails from localStorage on startup
@@ -592,6 +598,106 @@ export default function Home() {
     }
   }
 
+  // ✅ AI: Generate AI-powered category for email
+  async function generateAICategoryForMail(mail: any) {
+    // Already generated → skip
+    if (aiCategoryMap[mail.id]) return;
+
+    try {
+      const res = await fetch("/api/ai/categorize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subject: mail.subject,
+          snippet: mail.snippet,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.result?.category) {
+        setAiCategoryMap((prev: any) => ({
+          ...prev,
+          [mail.id]: data.result,
+        }));
+      }
+    } catch (error) {
+      console.error("Error generating AI category:", error);
+    }
+  }
+
+  // ✅ AI: Generate AI-powered spam detection for email
+  async function generateAISpamDetection(mail: any) {
+    // Already generated → skip
+    if (aiSpamMap[mail.id]) return;
+
+    try {
+      const res = await fetch("/api/ai/spam-detect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subject: mail.subject,
+          snippet: mail.snippet,
+          from: mail.from,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.result) {
+        setAiSpamMap((prev: any) => ({
+          ...prev,
+          [mail.id]: data.result,
+        }));
+      }
+    } catch (error) {
+      console.error("Error generating AI spam detection:", error);
+    }
+  }
+
+  // ✅ AI: Generate AI-powered deadline extraction for email
+  async function generateAIDeadline(mail: any) {
+    // Already generated → skip
+    if (aiDeadlineMap[mail.id]) return;
+
+    try {
+      const res = await fetch("/api/ai/extract-deadline", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subject: mail.subject,
+          snippet: mail.snippet,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.result) {
+        setAiDeadlineMap((prev: any) => ({
+          ...prev,
+          [mail.id]: data.result,
+        }));
+      }
+    } catch (error) {
+      console.error("Error generating AI deadline:", error);
+    }
+  }
+
+  // ✅ AI: Batch generate all AI data for visible emails
+  async function generateAllAIData(emails: any[]) {
+    const emailsNeedingAI = emails.slice(0, 10); // Process first 10 emails
+    
+    // Generate all AI data in parallel
+    await Promise.all(emailsNeedingAI.map(async (mail) => {
+      await Promise.all([
+        generateAIPriorityForMail(mail),
+        generateAICategoryForMail(mail),
+        generateAISpamDetection(mail),
+        generateAIDeadline(mail),
+      ]);
+    }));
+  }
+
 
   async function generateExplanation(mail: any) {
     setLoadingAI(true);
@@ -713,31 +819,7 @@ export default function Home() {
     const subject = mail.subject || "Read email";
     return subject.length > 45 ? subject.substring(0, 42) + "..." : subject;
   }
-  function extractDeadline(text: string) {
-    if (!text) return null;
-
-    const lower = text.toLowerCase();
-
-    // Common patterns
-    if (lower.includes("tomorrow")) return "Tomorrow";
-    if (lower.includes("today")) return "Today";
-
-    // Match DD Month pattern like: 21 Feb
-    const match = text.match(/\b(\d{1,2})\s?(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b/i);
-
-    if (match) {
-      return match[0]; // Example: "21 Feb"
-    }
-
-    // Match full date: 21/02/2026
-    const match2 = text.match(/\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/);
-
-    if (match2) {
-      return match2[0];
-    }
-
-    return null;
-  }
+  
   function getUrgencyLevel(deadlineText: string | null) {
     if (!deadlineText) return "None";
 
@@ -852,6 +934,14 @@ export default function Home() {
     }
   }, [showTodoView, emails.length]);
 
+  // ✅ AI: Auto-generate AI data for emails when they load
+  useEffect(() => {
+    if (emails.length > 0 && !showTodoView && !showWeeklyAnalysis && !showFocusMode) {
+      // Generate AI data for visible emails
+      generateAllAIData(filteredEmails.slice(0, 10));
+    }
+  }, [emails.length, activeTab, activeFolder]);
+
   // ✅ NEW: Auto-generate AI titles for archived emails without titles
   useEffect(() => {
     if (activeFolder === "archive" && archivedEmails.length > 0) {
@@ -871,118 +961,15 @@ export default function Home() {
     setNextPageToken(null); // reset pagination
     await loadEmails(); // fetch fresh inbox
   };
-
-  function getEmailCategory(mail: any) {
-    const subject = (mail.subject || "").toLowerCase();
-    const snippet = (mail.snippet || "").toLowerCase();
-
-    const text = subject + " " + snippet;
-
-    // ✅ DO NOW (urgent, time-sensitive)
-    if (
-      text.includes("urgent") ||
-      text.includes("asap") ||
-      text.includes("today") ||
-      text.includes("tonight") ||
-      text.includes("immediately") ||
-      text.includes("submit") ||
-      text.includes("deadline today") ||
-      text.includes("due today") ||
-      text.includes("expires today") ||
-      text.includes("interview") ||
-      text.includes("job offer")
-    ) {
-      return "Do Now";
-    }
-
-    // ✅ NEEDS DECISION (requires your input/choice)
-    if (
-      text.includes("decision") ||
-      text.includes("approve") ||
-      text.includes("confirm") ||
-      text.includes("rsvp") ||
-      text.includes("accept") ||
-      text.includes("decline") ||
-      text.includes("choose") ||
-      text.includes("select") ||
-      text.includes("feedback") ||
-      text.includes("review") ||
-      text.includes("sign")
-    ) {
-      return "Needs Decision";
-    }
-
-    // ✅ WAITING (updates, can wait)
-    if (
-      text.includes("update") ||
-      text.includes("newsletter") ||
-      text.includes("notification") ||
-      text.includes("alert") ||
-      text.includes("reminder") ||
-      text.includes("fyi") ||
-      text.includes("heads up")
-    ) {
-      return "Waiting";
-    }
-
-    // ✅ LOW ENERGY (default, less urgent)
-    return "Low Energy";
-  }
-
-
+  // ✅ AI-POWERED: Get priority score from AI or cache
   function getPriorityScore(mail: any) {
-    let score = 0;
-
-    const subject = (mail.subject || "").toLowerCase();
-    const snippet = (mail.snippet || "").toLowerCase();
-    const text = subject + " " + snippet;
-
-    // ✅ URGENCY KEYWORDS (highest priority)
-    if (text.includes("urgent") || text.includes("asap") || text.includes("immediately"))
-      score += 50;
-    else if (text.includes("today") || text.includes("tonight") || text.includes("expires today"))
-      score += 45;
-    else if (text.includes("tomorrow") || text.includes("due tomorrow"))
-      score += 40;
-    else if (text.includes("deadline") || text.includes("last date") || text.includes("due by"))
-      score += 35;
-    else if (text.includes("this week") || text.includes("by friday"))
-      score += 25;
-
-    // ✅ ACTION TYPE (importance)
-    if (text.includes("submit") || text.includes("assignment") || text.includes("homework"))
-      score += 25; // Academic deadlines
-    else if (text.includes("interview") || text.includes("job offer"))
-      score += 22; // Career opportunities
-    else if (text.includes("payment") || text.includes("invoice") || text.includes("bill"))
-      score += 20; // Financial obligations
-    else if (text.includes("sign") || text.includes("contract") || text.includes("agreement"))
-      score += 18; // Legal documents
-    else if (text.includes("meeting") || text.includes("call") || text.includes("zoom"))
-      score += 15; // Meetings
-    else if (text.includes("confirm") || text.includes("rsvp"))
-      score += 12; // Confirmations
-    else
-      score += 5; // Default
-
-    // ✅ RECENCY (time-based priority)
-    if (mail.date) {
-      const receivedDate = new Date(mail.date);
-      const now = new Date();
-
-      if (!isNaN(receivedDate.getTime())) {
-        const diffHours =
-          (now.getTime() - receivedDate.getTime()) / (1000 * 60 * 60);
-
-        if (diffHours < 1) score += 30; // Last hour
-        else if (diffHours < 6) score += 25; // Last 6 hours
-        else if (diffHours < 24) score += 20; // Today
-        else if (diffHours < 48) score += 10; // Yesterday
-        else score += 5; // Older
-      }
+    // Check if AI score exists in cache
+    if (aiPriorityMap[mail.id]?.score) {
+      return aiPriorityMap[mail.id].score;
     }
-
-    return Math.min(score, 100);
+    
+    // Fallback to basic score while AI is loading
+    return 50; // Default medium priority
   }
 
   function getPriorityColor(score: number) {
@@ -990,6 +977,18 @@ export default function Home() {
     if (score >= 50) return "#ffc107";
     return "#4caf50";
   }
+  
+  // ✅ AI-POWERED: Get email category from AI or cache
+  function getEmailCategory(mail: any) {
+    // Check if AI category exists in cache
+    if (aiCategoryMap[mail.id]?.category) {
+      return aiCategoryMap[mail.id].category;
+    }
+    
+    // Fallback while AI is loading
+    return "Low Energy";
+  }
+  
   function getCategoryColor(category: string) {
     if (category === "Do Now") return "#EF4444"; // 🔥 Red
     if (category === "Needs Decision") return "#8B5CF6"; // 🟣 Purple
@@ -997,6 +996,36 @@ export default function Home() {
     if (category === "Low Energy") return "#10B981"; // 🟢 Green
 
     return "#6B7280"; // Default Gray
+  }
+  
+  // ✅ AI-POWERED: Check if email is spam using AI
+  function isSpamEmail(mail: any) {
+    // Check if AI spam detection exists in cache
+    if (aiSpamMap[mail.id]) {
+      return aiSpamMap[mail.id].isSpam;
+    }
+    
+    // Fallback: don't mark as spam while AI is loading
+    return false;
+  }
+  
+  // ✅ AI-POWERED: Extract deadline using AI
+  function extractDeadline(text: string, mailId?: string) {
+    // If mailId provided, check AI cache
+    if (mailId && aiDeadlineMap[mailId]?.deadline) {
+      return aiDeadlineMap[mailId].deadline;
+    }
+    
+    // Fallback: basic regex extraction while AI is loading
+    if (!text) return null;
+    const lower = text.toLowerCase();
+    if (lower.includes("tomorrow")) return "Tomorrow";
+    if (lower.includes("today")) return "Today";
+    
+    const match = text.match(/\b(\d{1,2})\s?(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b/i);
+    if (match) return match[0];
+    
+    return null;
   }
 
   function getBurnoutStats(emails: any[]) {
@@ -1262,39 +1291,6 @@ export default function Home() {
 
     // Sort by priority
     return uniqueTasks.sort((a, b) => getPriorityScore(b) - getPriorityScore(a));
-  }
-
-  function isSpamEmail(mail: any) {
-    const subject = (mail.subject || "").toLowerCase();
-    const snippet = (mail.snippet || "").toLowerCase();
-    const from = (mail.from || "").toLowerCase();
-
-    const text = subject + " " + snippet;
-
-    const spamWords = [
-      "free",
-      "offer",
-      "limited time",
-      "unsubscribe",
-      "winner",
-      "congratulations",
-      "lottery",
-      "claim",
-      "buy now",
-      "click here",
-      "discount",
-      "cash prize",
-    ];
-
-    for (let word of spamWords) {
-      if (text.includes(word)) return true;
-    }
-
-    if (from.includes("noreply") && text.includes("unsubscribe")) {
-      return true;
-    }
-
-    return false;
   }
 
   // ✅ NEW: Check if email is actionable (for to-do list)
@@ -1680,62 +1676,41 @@ export default function Home() {
             </button>
 
             <button
-              onClick={() => signIn("azure-ad")}
+              onClick={() => {
+                // Disabled - Coming Soon
+              }}
+              disabled
               style={{
                 padding: "14px 32px",
                 borderRadius: 14,
                 fontWeight: 700,
-                cursor: "pointer",
+                cursor: "not-allowed",
                 fontSize: 16,
-                border: "none",
+                border: "2px solid #E5E7EB",
                 position: "relative",
                 overflow: "hidden",
-
-                // Default Background = White
-                background: "white",
-                color: "#2563EB",
-              }}
-              onMouseEnter={(e) => {
-                const span = e.currentTarget.querySelector(
-                  ".fill-outlook"
-                ) as HTMLElement;
-
-                // Slide Blue fill in
-                span.style.transform = "translateX(0)";
-
-                // Text becomes White
-                e.currentTarget.style.color = "white";
-              }}
-              onMouseLeave={(e) => {
-                const span = e.currentTarget.querySelector(
-                  ".fill-outlook"
-                ) as HTMLElement;
-
-                // Slide fill back out
-                span.style.transform = "translateX(-100%)";
-
-                // Text becomes Blue again
-                e.currentTarget.style.color = "#2563EB";
+                background: "#F3F4F6",
+                color: "#9CA3AF",
+                opacity: 0.7,
               }}
             >
-              {/* Fill Background (Blue Slide) */}
+              {/* Coming Soon Badge */}
               <span
-                className="fill-outlook"
                 style={{
                   position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  height: "100%",
-
-                  // Hover Fill = Blue Gradient
-                  background: "linear-gradient(135deg,#2563EB,#0EA5E9)",
-
-                  transform: "translateX(-100%)",
-                  transition: "all 0.4s ease",
-                  zIndex: 0,
+                  top: -8,
+                  right: -8,
+                  background: "linear-gradient(135deg, #F59E0B, #EF4444)",
+                  color: "white",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  padding: "4px 8px",
+                  borderRadius: 999,
+                  zIndex: 2,
                 }}
-              ></span>
+              >
+                COMING SOON
+              </span>
 
               {/* Button Text */}
               <span style={{ position: "relative", zIndex: 1 }}>

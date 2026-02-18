@@ -1,301 +1,335 @@
-# MailMind - AI-Powered Email Command Center
+# MailMind - AI-Powered Email Management
 
-> Making Sense of the Inbox Chaos
+> Smart Email Organization with Real AI
 
 **Team Cipher | AlgosQuest 2025**
 
-[![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)](https://fastapi.tiangolo.com/)
-[![React](https://img.shields.io/badge/React-18+-61DAFB.svg)](https://reactjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16.1+-black.svg)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5+-blue.svg)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-19+-61DAFB.svg)](https://reactjs.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## 🚀 Overview
 
-MailMind is an AI-powered email command center that transforms how people manage their inbox. Instead of treating email like a list, MailMind treats it like mental workload - helping people focus on the right thing at the right time, without burning out.
+MailMind is an AI-powered email management application that helps you organize, prioritize, and manage your Gmail inbox intelligently. Built with Next.js and powered by Groq's Llama 3.1 8B model, it provides real AI analysis (not just keyword matching) for email categorization, priority scoring, spam detection, and deadline extraction.
 
 ### The Problem
 
-Email has quietly become a task manager, decision log, reminder system, and compliance record. Employees spend hours sorting, rereading, and worrying about emails. Important action items get buried. Follow-ups are missed. Context is lost. And over time, this constant mental juggling leads straight to burnout.
+Email overload is real. Important emails get buried, deadlines are missed, and sorting through hundreds of messages wastes valuable time. Traditional email clients treat all emails equally, leaving you to manually prioritize and organize.
 
 ### Our Solution
 
-MailMind uses AI to understand emails like humans do - not just keywords, but meaning, intent, and context.
+MailMind uses AI to understand your emails contextually - analyzing content, urgency, and importance to help you focus on what matters most.
 
 ## ✨ Key Features
 
-### 1. 🎯 Smart Priority Scoring (0-100)
-Auto-prioritize emails based on:
-- **Sender Authority** (25 pts): VIP, manager, client detection
-- **Deadline Urgency** (25 pts): NLP-based deadline extraction
-- **Emotional Tone** (20 pts): Sentiment analysis via Gemini AI
-- **Historical Patterns** (15 pts): Response time/rate tracking
-- **Calendar Conflicts** (15 pts): Meeting/scheduling detection
+### 1. 🎯 AI Priority Scoring (1-100)
+Real AI-powered priority analysis using Groq Llama 3.1 8B:
+- Analyzes email content and context
+- Assigns priority score with reasoning
+- No keyword matching - understands nuance
 
-### 2. ✅ Smart Task Extraction
-- Automatically extract actionable TODO items from emails
-- NLP-powered task detection with due dates
-- Priority inherited from email score
-- Auto-archive trigger when tasks complete
+### 2. 📂 Smart Email Categorization
+AI categorizes emails into actionable groups:
+- **Do Now**: Urgent, time-sensitive emails
+- **Needs Decision**: Requires your input or approval
+- **Waiting**: Awaiting response from others
+- **Low Energy**: FYI, newsletters, low-priority items
 
-### 3. 🔄 Follow-up Management
-- AI-powered detection of emails expecting responses
-- Smart reply matching
-- Overdue tracking and alerts
-- Status management (waiting, replied, overdue)
+### 3. � Intelligent Spam Detection
+AI-powered spam and phishing detection:
+- Context-aware analysis (not just keyword lists)
+- Confidence scoring
+- Detailed reasoning for spam classification
 
-### 4. 🧠 Advanced NLP Analysis 
-- **Email Summarization**: One-line + detailed summaries with key points
-- **Named Entity Recognition**: Extract people, companies, dates, money
-- **Intent Detection**: Classify emails (request, question, complaint, etc.)
-- **Sentiment Analysis**: Analyze urgency, stress, and emotional tone
+### 4. 📅 Deadline Extraction
+Natural language deadline understanding:
+- Extracts dates from phrases like "by end of week"
+- Normalizes to standard format
+- Calculates urgency level
 
-### 5. 🔍 Semantic Search & Company Memory 
-- **Semantic Search**: Find emails by meaning, not just keywords
-- **Company Memory**: Ask questions like "What did legal say about the AWS contract?"
-- **RAG Technology**: Retrieval-Augmented Generation for intelligent answers
-- **Source Citations**: Answers include relevant source emails
+### 5. 🔍 Advanced Sorting & Filtering
+- Sort by: Priority, Deadline, Date, Sender
+- Filter by: Deadline urgency (Overdue, Today, This Week, etc.)
+- Tab-based UI for easy access
+- Persistent preferences via localStorage
 
-### 6. 😌 Burnout Detection 
-- Analyze email patterns (late-night emails, weekend work)
-- Track sentiment and stress levels over time
-- Risk scoring (0-100) with actionable recommendations
-- Privacy-first: All analysis is local and private
+### 6. � AI-Powered Email Tools
+- **Reply Generation**: Context-aware email replies
+- **Summarization**: Concise email summaries
+- **Explanation**: Why an email is important
+- **To-Do Extraction**: Generate actionable tasks
 
 ## 🏗️ Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                  MailMind Frontend                      │
-│                (React + Tailwind CSS)                   │
-└────────────────────────┬────────────────────────────────┘
-                         │ REST API
-┌────────────────────────▼────────────────────────────────┐
-│                   FastAPI Backend                       │
-├─────────────────────────────────────────────────────────┤
-│  Priority Scoring │ Task Extraction │ Follow-up Mgmt    │
-│  NLP Analysis     │ RAG Search      │ Burnout Detection │
-└────────────────────────┬────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                    Frontend Layer                            │
+│  Next.js 16 App Router + React 19 + TypeScript + Tailwind   │
+│                                                              │
+│  • Email List with AI-powered sorting/filtering             │
+│  • Real-time AI analysis caching                            │
+│  • Gmail OAuth authentication                               │
+└────────────────────────┬─────────────────────────────────────┘
                          │
-┌────────────────────────▼────────────────────────────────┐
-│  Groq AI (Llama 3.3 70B) with Rule-Based Fallback      │
-│  Sentence Transformers │ ChromaDB (with fallback)      │
-└─────────────────────────────────────────────────────────┘
+                         │ HTTP/REST
+                         │
+┌────────────────────────▼─────────────────────────────────────┐
+│                   API Routes Layer                           │
+│              Next.js Serverless Functions                    │
+│                                                              │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  AI Features (/api/ai/*)                            │    │
+│  │  • priority        • categorize   • spam-detect     │    │
+│  │  • extract-deadline • reply       • summarize       │    │
+│  │  • explain         • todo-title                     │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                              │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  Gmail Integration (/api/gmail/*)                   │    │
+│  │  • route (list)    • message      • send            │    │
+│  │  • reply           • attachment                     │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                              │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  Other                                              │    │
+│  │  • /api/auth/[...nextauth] (NextAuth.js)           │    │
+│  │  • /api/gemini (Gemini chat)                        │    │
+│  └─────────────────────────────────────────────────────┘    │
+└────────────────────────┬─────────────────────────────────────┘
+                         │
+                         │ External API Calls
+                         │
+┌────────────────────────▼─────────────────────────────────────┐
+│                  External Services                           │
+│                                                              │
+│  • Groq API (Llama 3.1 8B Instant) - AI inference           │
+│  • Gmail API (googleapis) - Email operations                │
+│  • Google Gemini API - Optional AI assistant                │
+│  • NextAuth.js - OAuth 2.0 authentication                   │
+└──────────────────────────────────────────────────────────────┘
 ```
-
-**AI Architecture**: Groq Cloud (primary) → Rule-based fallback (guaranteed)
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.9+
 - Node.js 16+
-- pip
+- npm or yarn
+- Gmail account
+- Groq API key (free at console.groq.com)
 
 ### Installation
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/your-team/mailmind.git
-cd mailmind
+git clone https://github.com/Avila-Princy-M01/mailmindd.git
+cd mailmindd
 ```
 
-2. **Install Python dependencies**
+2. **Install dependencies**
 ```bash
-pip install -r requirements.txt
+npm install
 ```
 
 3. **Set up environment variables**
+Create `.env.local` file:
 ```bash
-cp .env.example .env
-# Edit .env and add your GROQ_API_KEY (get free key from console.groq.com)
+# Groq AI
+GROQ_API_KEY=your_groq_api_key_here
+
+# Google OAuth (for Gmail integration)
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+
+# NextAuth
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your_nextauth_secret
+
+# Google Gemini (optional)
+GEMINI_API_KEY=your_gemini_api_key
 ```
 
-4. **Run the demo**
+4. **Run the development server**
 ```bash
-python nlp_rag/demo.py
-```
-
-5. **Start the API**
-```bash
-python main.py
-```
-
-Visit: http://localhost:8000/docs for interactive API documentation
-
-6. **Start the frontend** (optional)
-```bash
-cd frontend
-npm install
 npm run dev
 ```
 
+Visit: http://localhost:3000
+
 ## 📚 Documentation
 
-- **[Quick Start Guide](QUICK_START_NLP_RAG.md)** - Get up and running in 5 minutes
-- **[NLP & RAG Setup](NLP_RAG_SETUP.md)** - Detailed setup instructions
-- **[API Examples](nlp_rag/API_EXAMPLES.md)** - Complete API reference with examples
-- **[Architecture](nlp_rag/ARCHITECTURE.md)** - System architecture and design
-- **[Presentation Guide](PRESENTATION_GUIDE.md)** - Demo and presentation tips
+- **[AI Features Guide](AI_FEATURES.md)** - Detailed explanation of AI-powered features
+- **[Google OAuth Setup](GOOGLE_OAUTH_SETUP.md)** - Gmail integration setup
 
 ## 🎯 API Endpoints
 
-### Priority Scoring
-- `POST /api/v1/emails/score` - Score a single email
-- `POST /api/v1/emails/score/batch` - Score multiple emails
+### AI-Powered Features
+- `POST /api/ai/priority` - AI priority scoring (1-100)
+- `POST /api/ai/categorize` - Email categorization
+- `POST /api/ai/spam-detect` - Spam detection with confidence
+- `POST /api/ai/extract-deadline` - Deadline extraction
+- `POST /api/ai/reply` - Generate email replies
+- `POST /api/ai/summarize` - Email summarization
+- `POST /api/ai/explain` - Explain email importance
+- `POST /api/ai/todo-title` - Generate to-do titles
 
-### Task Extraction
-- `POST /api/v1/tasks/extract` - Extract tasks from email
-- `GET /api/v1/tasks` - List all tasks
+### Gmail Integration
+- `GET /api/gmail` - Fetch Gmail messages
+- `GET /api/gmail/message` - Get specific message
+- `POST /api/gmail/send` - Send email
+- `POST /api/gmail/reply` - Reply to email
+- `GET /api/gmail/attachment` - Download attachment
 
-### Follow-up Management
-- `POST /api/v1/followups/detect` - Detect follow-up potential
-- `GET /api/v1/followups/waiting` - Get emails awaiting reply
-
-### NLP Analysis
-- `POST /api/v1/nlp/analyze` - Complete NLP analysis
-- `POST /api/v1/nlp/summarize` - Email summarization
-- `POST /api/v1/nlp/entities` - Entity extraction
-
-### Semantic Search & RAG
-- `POST /api/v1/rag/search` - Semantic email search
-- `POST /api/v1/rag/ask` - Ask questions (Company Memory)
-- `POST /api/v1/rag/index` - Index emails for search
-
-### Burnout Detection
-- `POST /api/v1/burnout/analyze` - Analyze burnout patterns
-- `POST /api/v1/burnout/quick-check` - Quick risk assessment
+### Gemini Integration
+- `POST /api/gemini` - Gemini AI chat
 
 ## 💡 Usage Examples
 
-### Analyze an Email
-```python
-from nlp_rag.services.nlp_analyzer import get_nlp_analyzer
+### Priority Scoring
+```typescript
+const response = await fetch('/api/ai/priority', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    subject: "Urgent: Budget Review",
+    snippet: "We need to review the Q4 budget by Friday..."
+  })
+});
 
-analyzer = get_nlp_analyzer()
-analysis = analyzer.analyze_email(
-    email_id="123",
-    subject="Urgent: Budget Review",
-    body="We need to review the Q4 budget by Friday..."
-)
-
-print(analysis.summary.short_summary)
-print(analysis.entities)
-print(analysis.intent)
+const { result } = await response.json();
+// { score: 85, reason: "High urgency with clear deadline" }
 ```
 
-### Semantic Search
-```python
-from nlp_rag.services.rag_service import get_rag_service
-from nlp_rag.models.schemas import SearchQuery
+### Email Categorization
+```typescript
+const response = await fetch('/api/ai/categorize', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    subject: "Project Update",
+    snippet: "Please review and approve the design..."
+  })
+});
 
-rag = get_rag_service()
-results = rag.search_emails(SearchQuery(
-    query="budget approval discussions",
-    limit=10
-))
-
-for result in results.results:
-    print(f"{result.subject} ({result.similarity_score:.0%})")
+const { result } = await response.json();
+// { category: "Needs Decision", confidence: 0.92 }
 ```
 
-### Check Burnout Risk
-```python
-from nlp_rag.services.burnout_detector import get_burnout_detector
+### Spam Detection
+```typescript
+const response = await fetch('/api/ai/spam-detect', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    from: "sender@example.com",
+    subject: "You've won!",
+    snippet: "Click here to claim your prize..."
+  })
+});
 
-detector = get_burnout_detector()
-metrics = detector.analyze_user_patterns(
-    user_email="user@company.com",
-    emails=user_emails,
-    period_days=30
-)
-
-print(f"Risk Level: {metrics.risk_level}")
-print(f"Signals: {metrics.signals}")
-print(f"Recommendations: {metrics.recommendations}")
+const { result } = await response.json();
+// { isSpam: true, confidence: 0.95, reason: "Phishing indicators detected" }
 ```
 
 ## 🔧 Tech Stack
 
-### Backend
-- **FastAPI** - Modern, fast Python web framework
-- **Groq Cloud AI** - Ultra-fast AI inference with Llama 3.3 70B
-- **Sentence Transformers** - Local embeddings for semantic search
-- **ChromaDB** - Vector database for RAG (with in-memory fallback)
-- **SQLAlchemy** - Database ORM
-- **Pydantic** - Data validation
-
 ### Frontend
-- **React** - UI framework
-- **Tailwind CSS** - Styling
-- **Vite** - Build tool
+- **Next.js 16** - React framework with App Router
+- **React 19** - UI library
+- **TypeScript 5** - Type safety
+- **Tailwind CSS 3** - Styling
+- **Framer Motion** - Animations
+
+### Backend
+- **Next.js API Routes** - Serverless API endpoints
+- **NextAuth.js** - Authentication (Google OAuth)
+- **Gmail API** - Email integration via googleapis
+- **Mailparser** - Email parsing
 
 ### AI/ML
-- **sentence-transformers** - Text embeddings (all-MiniLM-L6-v2)
-- **Groq Cloud** - Ultra-fast AI inference (Llama 3.3 70B)
-- **ChromaDB** - Vector similarity search
+- **Groq SDK** - Ultra-fast AI inference
+- **Llama 3.1 8B Instant** - Primary AI model
+- **Google Gemini** - Optional AI assistant
+
+### Development
+- **ESLint** - Code linting
+- **PostCSS** - CSS processing
+- **Autoprefixer** - CSS vendor prefixes
 
 ## 📊 Performance
 
-- **Search**: <100ms for 10,000 emails
-- **Analysis**: 1-2s per email (with Gemini)
-- **Embeddings**: ~50ms per email
-- **Scalability**: Tested with 100,000+ emails
+- **AI Response Time**: 1-3 seconds per email
+- **Batch Processing**: 10 emails at a time
+- **Caching**: In-memory caching to avoid redundant API calls
+- **Parallel Processing**: Multiple AI requests run simultaneously
 
 ## 🔒 Privacy & Security
 
-- **Local Processing**: All NLP processing happens locally by default
-- **Optional External AI**: Groq Cloud API is optional with rule-based fallback
-- **User Control**: Users control what gets indexed
-- **No Permanent Storage**: Email content not stored permanently
-- **Privacy-First Design**: Burnout detection is for early help, not surveillance
+- **OAuth 2.0**: Secure Gmail authentication
+- **No Email Storage**: Emails processed on-demand, not stored
+- **API Key Security**: Environment variables for sensitive keys
+- **Client-Side Caching**: AI results cached in browser memory only
+- **HTTPS Only**: Secure communication in production
 
-## 🎯 Business Impact
+## 🎯 What's Real vs What's Not
 
-For a 1,000-employee company:
-- **Time Savings**: 2 hours per employee per day
-- **Cost Savings**: $26+ million recovered annually (at $50/hour)
-- **Burnout Prevention**: Early detection prevents costly turnover
-- **Productivity**: 28% less time managing email, 40% less time searching
+### ✅ Actually Implemented
+- AI-powered priority scoring (Groq Llama 3.1 8B)
+- AI email categorization
+- AI spam detection
+- AI deadline extraction
+- Gmail OAuth integration
+- Email sorting and filtering
+- Reply generation
+- Email summarization
+
+### ❌ Not Yet Implemented
+- ChromaDB vector database
+- RAG (Retrieval-Augmented Generation)
+- Semantic search
+- Burnout detection
+- Task extraction with persistence
+- Follow-up management
+- Calendar integration
+- Historical pattern analysis
 
 ## 🛣️ Roadmap
 
+- [ ] Implement semantic search with vector embeddings
+- [ ] Add task management with database persistence
+- [ ] Build follow-up tracking system
+- [ ] Add calendar integration
+- [ ] Implement burnout detection
+- [ ] Mobile responsive design improvements
 - [ ] Browser extension
-- [ ] Mobile app
-- [ ] Team-level insights for managers
-- [ ] Slack & Teams integration
-- [ ] Custom enterprise AI tuning
-- [ ] Multi-language support
-- [ ] Advanced analytics dashboard
+- [ ] Team collaboration features
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 📄 License
+## � License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 👥 Team Cipher
 
-- **[Your Name]** - [Role]
-- **[Teammate 2]** - [Role]
-- **[Teammate 3]** - [Role]
+Built for AlgosQuest 2025
 
 ## 🙏 Acknowledgments
 
-- AlgosQuest 2025 for the opportunity
 - Groq for ultra-fast AI inference
-- Sentence Transformers for local embeddings
-- ChromaDB for vector search capabilities
+- Google for Gmail API and Gemini
+- Next.js team for the amazing framework
+- Open source community
 
 ## 📞 Contact
 
-- **Project Link**: [https://github.com/your-team/mailmind](https://github.com/your-team/mailmind)
-- **Demo Video**: [Link to demo]
-- **Presentation**: [Link to slides]
+- **GitHub**: [https://github.com/Avila-Princy-M01/mailmindd](https://github.com/Avila-Princy-M01/mailmindd)
+- **Original Repo**: [https://github.com/shreysherikar/mailmindd](https://github.com/shreysherikar/mailmindd)
 
 ---
 
 **Built with ❤️ by Team Cipher for AlgosQuest 2025**
 
-*MailMind - Making Sense of the Inbox Chaos*
+*MailMind - Smart Email Organization with Real AI*
