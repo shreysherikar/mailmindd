@@ -2,6 +2,7 @@
 
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
+import ReminderProvider from "@/components/ReminderProvider";
 
 export default function RootLayout({
   children,
@@ -11,7 +12,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-[var(--bg)] text-[var(--text)]">
-        <SessionProvider>{children}</SessionProvider>
+        <SessionProvider>
+          <ReminderProvider>
+            {children}
+          </ReminderProvider>
+        </SessionProvider>
       </body>
     </html>
   );

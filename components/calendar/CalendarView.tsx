@@ -24,9 +24,44 @@ export default function CalendarView({ events, onAddEvent, onDeleteEvent, onEven
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [newEvent, setNewEvent] = useState({
+    title: "",
+    date: "",
+    time: "",
+    type: "reminder" as any,
+    description: "",
+    reminderMinutes: 15,
+  });
 
   const monthNames = ["January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"];
+
+  const handleAddEvent = () => {
+    if (!newEvent.title || !newEvent.date) {
+      alert("Please fill in title and date");
+      return;
+    }
+
+    onAddEvent({
+      id: Date.now().toString(),
+      title: newEvent.title,
+      date: new Date(newEvent.date),
+      time: newEvent.time || undefined,
+      type: newEvent.type,
+      description: newEvent.description,
+      reminderMinutes: parseInt(newEvent.reminderMinutes as any) || 15,
+    });
+
+    setShowAddModal(false);
+    setNewEvent({
+      title: "",
+      date: "",
+      time: "",
+      type: "reminder",
+      description: "",
+      reminderMinutes: 15,
+    });
+  };
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -213,6 +248,191 @@ export default function CalendarView({ events, onAddEvent, onDeleteEvent, onEven
             ))}
         </div>
       </div>
+
+      {/* Add Event Modal */}
+      {showAddModal && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0,0,0,0.5)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 9999,
+        }}>
+          <div style={{
+            background: "white",
+            borderRadius: 18,
+            padding: 30,
+            width: "90%",
+            maxWidth: 500,
+          }}>
+            <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 20 }}>Add New Event</h2>
+
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 13, fontWeight: 600, color: "#6B7280", display: "block", marginBottom: 6 }}>
+                Event Title *
+              </label>
+              <input
+                type="text"
+                value={newEvent.title}
+                onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                placeholder="Team meeting, Project deadline..."
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  borderRadius: 10,
+                  border: "1px solid #E5E7EB",
+                  fontSize: 14,
+                  outline: "none",
+                }}
+              />
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+              <div>
+                <label style={{ fontSize: 13, fontWeight: 600, color: "#6B7280", display: "block", marginBottom: 6 }}>
+                  Date *
+                </label>
+                <input
+                  type="date"
+                  value={newEvent.date}
+                  onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    borderRadius: 10,
+                    border: "1px solid #E5E7EB",
+                    fontSize: 14,
+                    outline: "none",
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: 13, fontWeight: 600, color: "#6B7280", display: "block", marginBottom: 6 }}>
+                  Time
+                </label>
+                <input
+                  type="time"
+                  value={newEvent.time}
+                  onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    borderRadius: 10,
+                    border: "1px solid #E5E7EB",
+                    fontSize: 14,
+                    outline: "none",
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+              <div>
+                <label style={{ fontSize: 13, fontWeight: 600, color: "#6B7280", display: "block", marginBottom: 6 }}>
+                  Type
+                </label>
+                <select
+                  value={newEvent.type}
+                  onChange={(e) => setNewEvent({ ...newEvent, type: e.target.value as any })}
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    borderRadius: 10,
+                    border: "1px solid #E5E7EB",
+                    fontSize: 14,
+                    outline: "none",
+                  }}
+                >
+                  <option value="meeting">Meeting</option>
+                  <option value="deadline">Deadline</option>
+                  <option value="appointment">Appointment</option>
+                  <option value="reminder">Reminder</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: 13, fontWeight: 600, color: "#6B7280", display: "block", marginBottom: 6 }}>
+                  Remind me (minutes before)
+                </label>
+                <select
+                  value={newEvent.reminderMinutes}
+                  onChange={(e) => setNewEvent({ ...newEvent, reminderMinutes: parseInt(e.target.value) })}
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    borderRadius: 10,
+                    border: "1px solid #E5E7EB",
+                    fontSize: 14,
+                    outline: "none",
+                  }}
+                >
+                  <option value="5">5 minutes</option>
+                  <option value="15">15 minutes</option>
+                  <option value="30">30 minutes</option>
+                  <option value="60">1 hour</option>
+                  <option value="1440">1 day</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ fontSize: 13, fontWeight: 600, color: "#6B7280", display: "block", marginBottom: 6 }}>
+                Description
+              </label>
+              <textarea
+                value={newEvent.description}
+                onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                placeholder="Add details about this event..."
+                rows={3}
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  borderRadius: 10,
+                  border: "1px solid #E5E7EB",
+                  fontSize: 14,
+                  outline: "none",
+                  resize: "none",
+                }}
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: 12 }}>
+              <button
+                onClick={handleAddEvent}
+                style={{
+                  flex: 1,
+                  padding: "12px",
+                  borderRadius: 10,
+                  border: "none",
+                  background: "linear-gradient(135deg,#6D28D9,#2563EB)",
+                  color: "white",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  fontSize: 14,
+                }}
+              >
+                Add Event
+              </button>
+              <button
+                onClick={() => setShowAddModal(false)}
+                style={{
+                  flex: 1,
+                  padding: "12px",
+                  borderRadius: 10,
+                  border: "1px solid #E5E7EB",
+                  background: "white",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                  fontSize: 14,
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

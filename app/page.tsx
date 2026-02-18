@@ -1294,10 +1294,18 @@ export default function Home() {
             </div>
 
 
-            {/* ✅ Right: Features Button */}
-            <Link href="/features" className="features-btn">
-              Features →
-            </Link>
+            {/* ✅ Right: Navigation Links */}
+            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+              <Link href="/calendar" className="features-btn">
+                📅 Calendar
+              </Link>
+              <Link href="/team" className="features-btn">
+                👥 Team
+              </Link>
+              <Link href="/features" className="features-btn">
+                Features →
+              </Link>
+            </div>
           </div>
 
 
@@ -1615,6 +1623,20 @@ export default function Home() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="bg-transparent outline-none text-white placeholder-white/70 w-full text-sm"
             />
+          </div>
+
+          {/* Navigation Links */}
+          <div className="flex items-center gap-3">
+            <Link href="/calendar">
+              <button className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 transition-all text-sm font-semibold">
+                📅 Calendar
+              </button>
+            </Link>
+            <Link href="/team">
+              <button className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 transition-all text-sm font-semibold">
+                👥 Team
+              </button>
+            </Link>
           </div>
 
           {/* Right: Icons */}
