@@ -10,6 +10,9 @@ export interface Email {
   label?: string[];
   attachments?: Attachment[];
   threadId?: string;
+  messageId?: string;
+  todoTitle?: string;
+  completedDate?: string;
 }
 
 export interface Attachment {
@@ -143,6 +146,7 @@ export interface CalendarEvent {
   title: string;
   date: Date;
   time?: string;
+  type: "deadline" | "meeting" | "appointment" | "reminder";
   description?: string;
   emailId?: string;
   reminderMinutes?: number;
@@ -164,7 +168,7 @@ export interface EmailAssignment {
   assignedBy: string;
   assignedAt: string;
   deadline?: string;
-  status: "pending" | "in-progress" | "completed";
+  status: "assigned" | "in-progress" | "waiting-on-client" | "completed";
   priority: number;
-  notes?: string[];
+  notes: string[];
 }

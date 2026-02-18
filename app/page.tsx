@@ -272,7 +272,7 @@ export default function Home() {
           minute: "2-digit",
         }),
         // ✅ Save the AI-generated to-do title if available
-        todoTitle: aiTodoTitles[selectedMail.id] || null,
+        todoTitle: aiTodoTitles[selectedMail.id] || undefined,
       };
       
       const updated = [archivedEmail, ...prev]; // Add to beginning
@@ -1647,54 +1647,6 @@ export default function Home() {
                 Sign in with Google →
               </span>
             </button>
-
-            <button
-              onClick={() => {
-                // Disabled - Coming Soon
-              }}
-              disabled
-              style={{
-                padding: "14px 32px",
-                borderRadius: 14,
-                fontWeight: 700,
-                cursor: "not-allowed",
-                fontSize: 16,
-                border: "2px solid #E5E7EB",
-                position: "relative",
-                overflow: "hidden",
-                background: "#F3F4F6",
-                color: "#9CA3AF",
-                opacity: 0.7,
-              }}
-            >
-              {/* Coming Soon Badge */}
-              <span
-                style={{
-                  position: "absolute",
-                  top: -8,
-                  right: -8,
-                  background: "linear-gradient(135deg, #F59E0B, #EF4444)",
-                  color: "white",
-                  fontSize: 10,
-                  fontWeight: 700,
-                  padding: "4px 8px",
-                  borderRadius: 999,
-                  zIndex: 2,
-                }}
-              >
-                COMING SOON
-              </span>
-
-              {/* Button Text */}
-              <span style={{ position: "relative", zIndex: 1 }}>
-                Sign in with Outlook →
-              </span>
-            </button>
-
-
-
-
-
           </div>
         </div>
 
@@ -2504,7 +2456,7 @@ export default function Home() {
                         body: JSON.stringify({ emailId, status }),
                       });
                       setAssignedEmails(assignedEmails.map(a => 
-                        a.emailId === emailId ? { ...a, status } : a
+                        a.emailId === emailId ? { ...a, status: status as EmailAssignment["status"] } : a
                       ));
                     } catch (error) {
                       // Failed to update status
@@ -2518,7 +2470,7 @@ export default function Home() {
                         body: JSON.stringify({ emailId, note }),
                       });
                       setAssignedEmails(assignedEmails.map(a => 
-                        a.emailId === emailId ? { ...a, notes: [...(a.notes || []), note] } : a
+                        a.emailId === emailId ? { ...a, notes: [...a.notes, note] } : a
                       ));
                     } catch (error) {
                       // Failed to add note
@@ -3709,7 +3661,7 @@ export default function Home() {
                 </div>
 
                 {/* 📎 Attachments Section */}
-                {selectedMail?.attachments?.length > 0 && (
+                {selectedMail?.attachments && selectedMail.attachments.length > 0 && (
                   <div
                     style={{
                       marginTop: 20,
