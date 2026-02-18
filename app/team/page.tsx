@@ -509,7 +509,7 @@ function CreateTeamModal({ teamName, setTeamName, memberEmails, setMemberEmails,
           <label style={{ fontSize: 13, fontWeight: 600, color: "#6B7280", display: "block", marginBottom: 8 }}>
             Team Members (Email Addresses) *
           </label>
-          {memberEmails.map((email, index) => (
+          {memberEmails.map((email: string, index: number) => (
             <div key={index} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
               <input
                 type="email"

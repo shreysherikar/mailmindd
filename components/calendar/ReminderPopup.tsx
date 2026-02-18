@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 type CalendarEvent = {
   id: string;
   title: string;
-  date: Date;
+  date: Date | string;
   time?: string;
   type: "deadline" | "meeting" | "appointment" | "reminder";
   description?: string;
