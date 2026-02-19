@@ -19,6 +19,8 @@ import FeaturesSection from "@/components/landing/FeaturesSection";
 import WhySection from "@/components/landing/WhySection";
 import DemoVideoSection from "@/components/landing/DemoVideoSection";
 import Footer from "@/components/Footer";
+import DemoInboxSection from "@/components/landing/DemoInboxSection";
+
 
 
 
@@ -1451,6 +1453,7 @@ if (!session) {
       <Header />
       <Hero />
       <WhySection />
+            <DemoInboxSection />
         <DemoVideoSection />
           <Footer />
 
