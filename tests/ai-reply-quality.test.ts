@@ -5,7 +5,7 @@ describe('AI Reply Generation - LLM Validated', () => {
   it('should generate professional reply to meeting request', async () => {
     const email = {
       subject: 'Meeting Request: Project Discussion',
-      body: 'Hi, I would like to schedule a meeting to discuss the new project timeline. Are you available next week?',
+      snippet: 'Hi, I would like to schedule a meeting to discuss the new project timeline. Are you available next week?',
       from: 'colleague@company.com',
       tone: 'professional',
     };
@@ -20,7 +20,7 @@ describe('AI Reply Generation - LLM Validated', () => {
     const reply = data.reply;
 
     const validation = await validateReplyQuality(
-      { subject: email.subject, body: email.body },
+      { subject: email.subject, body: email.snippet },
       reply,
       email.tone
     );
@@ -36,7 +36,7 @@ describe('AI Reply Generation - LLM Validated', () => {
   it('should generate friendly reply to casual email', async () => {
     const email = {
       subject: 'Quick Question',
-      body: 'Hey! Quick question - do you have the slides from last weeks presentation?',
+      snippet: 'Hey! Quick question - do you have the slides from last weeks presentation?',
       from: 'teammate@company.com',
       tone: 'friendly',
     };
@@ -51,7 +51,7 @@ describe('AI Reply Generation - LLM Validated', () => {
     const reply = data.reply;
 
     const validation = await validateReplyQuality(
-      { subject: email.subject, body: email.body },
+      { subject: email.subject, body: email.snippet },
       reply,
       email.tone
     );
