@@ -12,6 +12,18 @@ import ComposeModal from "@/components/ComposeModal";
 import EmailDetail from "@/components/EmailDetail";
 import WeeklyAnalysis from "@/components/WeeklyAnalysis";
 import FocusMode from "@/components/FocusMode";
+import Header from "@/components/Header";
+import Hero from "@/components/Hero";
+import LandingBackground from "@/components/LandingBackground";
+import FeaturesSection from "@/components/landing/FeaturesSection";
+import WhySection from "@/components/landing/WhySection";
+import DemoVideoSection from "@/components/landing/DemoVideoSection";
+import Footer from "@/components/Footer";
+
+
+
+
+
 import { Email, WeeklyAnalysis as WeeklyAnalysisType, ActiveFolder, ActiveTab } from "@/types";
 import { 
   extractEmail, 
@@ -1431,295 +1443,24 @@ export default function Home() {
     fontWeight: 600,
   };
 
-  if (!session) {
 
-    return (
-      <div
-        style={{
-          minHeight: "100vh",
-          background:
-            "linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #A78BFA 100%)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "60px",
-          overflow: "hidden",
-        }}
-      >
-        <div
-
-        >
-
-          {/* ✅ TOP HEADER ROW */}
-          <div
-            style={{
-              position: "absolute",
-              top: 25,
-              left: 45,
-              right: 45,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            {/* ✅ Left: Logo + Name */}
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <img
-                src="/logo.png"
-                alt="MailMind Logo"
-                style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: 10,
-                  objectFit: "contain",
-                }}
-              />
-
-              <h2
-                style={{
-                  color: "white",
-                  fontWeight: 800,
-                  fontSize: 22,
-                  margin: 0,
-                }}
-              >
-                MailMind
-              </h2>
-            </div>
-            {/* 🕒 Center Date & Time */}
-            <div
-              style={{
-                position: "absolute",
-                left: "50%",
-                transform: "translateX(-50%)",
-                padding: "8px 18px",
-                borderRadius: 14,
-                background: "rgba(255,255,255,0.12)",
-                backdropFilter: "blur(10px)",
-                color: "rgba(255,255,255,0.9)",
-                fontSize: 14,
-                fontWeight: 600,
-              }}
-            >
-
-              {/* 🕒 Center Date & Time */}
-              {mounted && (
-                <div
-                  style={{
-                    position: "absolute",
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    padding: "8px 18px",
-                    borderRadius: 14,
-                    background: "rgba(255,255,255,0.12)",
-                    backdropFilter: "blur(10px)",
-                    color: "rgba(255,255,255,0.9)",
-                    fontSize: 14,
-                    fontWeight: 600,
-                    letterSpacing: "0.5px",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {currentTime.toLocaleString("en-IN", {
-                    weekday: "short",
-                    day: "2-digit",
-                    month: "short",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </div>
-              )}
+if (!session) {
+  return (
+<main className="relative min-h-screen text-white overflow-hidden">
+  <LandingBackground />
+      <Header />
+      <Hero />
+      <WhySection />
+        <DemoVideoSection />
+          <Footer />
 
 
-            </div>
-
-
-            {/* ✅ Right: Features Button */}
-            <Link href="/features" className="features-btn">
-              Features →
-            </Link>
-          </div>
+    </main>
+  );
+}
 
 
 
-          {/* Brand Name */}
-
-        </div>
-
-
-        {/* ✅ Left Text Section */}
-        <div style={{ maxWidth: "520px", color: "white" }}>
-          <h1
-            style={{
-              fontSize: "64px",
-              fontWeight: 800,
-              lineHeight: 1.1,
-            }}
-          >
-            Where email <br /> meets <br /> intelligence
-          </h1>
-
-          <p style={{ marginTop: 20, fontSize: 18, opacity: 0.9 }}>
-            MailMind helps you summarize, prioritize and reply smarter —
-            powered by AI.
-          </p>
-
-          {/* Buttons */}
-          <div style={{ display: "flex", gap: 20, marginTop: 40 }}>
-            <button
-              onClick={() => signIn("google")}
-              style={{
-                padding: "14px 28px",
-                borderRadius: 14,
-                fontWeight: 700,
-                cursor: "pointer",
-                fontSize: 16,
-                border: "none",
-                position: "relative",
-                overflow: "hidden",
-                background: "white",
-                color: "#2563EB",
-              }}
-              onMouseEnter={(e) => {
-                const span = e.currentTarget.querySelector(
-                  ".fill"
-                ) as HTMLElement;
-                span.style.transform = "translateX(0)";
-                e.currentTarget.style.color = "white";
-              }}
-              onMouseLeave={(e) => {
-                const span = e.currentTarget.querySelector(
-                  ".fill"
-                ) as HTMLElement;
-                span.style.transform = "translateX(-100%)";
-                e.currentTarget.style.color = "#2563EB";
-              }}
-            >
-              {/* Fill Background */}
-              <span
-                className="fill"
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  height: "100%",
-                  background: "linear-gradient(135deg,#2563EB,#0EA5E9)",
-                  transform: "translateX(-100%)",
-                  transition: "all 0.4s ease",
-                  zIndex: 0,
-                }}
-              ></span>
-
-              {/* Button Text */}
-              <span style={{ position: "relative", zIndex: 1 }}>
-                Sign in with Google →
-              </span>
-            </button>
-
-            <button
-              onClick={() => {
-                // Disabled - Coming Soon
-              }}
-              disabled
-              style={{
-                padding: "14px 32px",
-                borderRadius: 14,
-                fontWeight: 700,
-                cursor: "not-allowed",
-                fontSize: 16,
-                border: "2px solid #E5E7EB",
-                position: "relative",
-                overflow: "hidden",
-                background: "#F3F4F6",
-                color: "#9CA3AF",
-                opacity: 0.7,
-              }}
-            >
-              {/* Coming Soon Badge */}
-              <span
-                style={{
-                  position: "absolute",
-                  top: -8,
-                  right: -8,
-                  background: "linear-gradient(135deg, #F59E0B, #EF4444)",
-                  color: "white",
-                  fontSize: 10,
-                  fontWeight: 700,
-                  padding: "4px 8px",
-                  borderRadius: 999,
-                  zIndex: 2,
-                }}
-              >
-                COMING SOON
-              </span>
-
-              {/* Button Text */}
-              <span style={{ position: "relative", zIndex: 1 }}>
-                Sign in with Outlook →
-              </span>
-            </button>
-
-
-
-
-
-          </div>
-        </div>
-
-        {/* ✅ Right Flashcard Image Animation */}
-        <div
-          style={{
-            width: "520px",
-            height: "360px",
-            borderRadius: 24,
-            overflow: "hidden",
-            position: "relative",
-            boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
-          }}
-        >
-          <img
-            key={currentSlide}
-            src={slides[currentSlide]}
-            alt="slide"
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              position: "absolute",
-              animation: "fadeSlide 3.5s ease-in-out",
-
-            }}
-          />
-        </div>
-
-        {/* ✅ Animation CSS */}
-        <style>
-          {`
-    @keyframes fadeSlide {
-      0% {
-        opacity: 0;
-        transform: scale(0.98);
-      }
-      20% {
-        opacity: 1;
-        transform: scale(1);
-      }
-      80% {
-        opacity: 1;
-        transform: scale(1);
-      }
-      100% {
-        opacity: 0;
-        transform: scale(1.02);
-      }
-    }
-  `}
-        </style>
-
-      </div>
-    );
-  }
 
   // ✅ FIX 3: Proper filtering with BOTH activeTab AND activeFolder
   const filteredEmails = emails.filter((mail) => {
